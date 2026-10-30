@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_PATH: /data/trail.db
+      MAP_USER_AGENT: ${MAP_USER_AGENT:-TrailPocket-Hackathon/1.0}
+      OSRM_FOOT_URL: ${OSRM_FOOT_URL:-https://routing.openstreetmap.de/routed-foot}
+      OSRM_BIKE_URL: ${OSRM_BIKE_URL:-https://routing.openstreetmap.de/routed-bike}
+      PHOTON_URL: ${PHOTON_URL:-https://photon.komoot.io}
+      OVERPASS_URL: ${OVERPASS_URL:-https://overpass-api.de/api/interpreter}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+    volumes:
+      - trail-data:/data
+    restart: unless-stopped
+volumes:
+  trail-data:

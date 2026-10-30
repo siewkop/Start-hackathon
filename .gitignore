@@ -1,0 +1,15 @@
+.idea/
+.gradle/
+.kotlin/
+**/build/
+**/local.properties
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+backend/data/
+.env
+.tools/
+artifacts/
+*.log
+*.hprof
