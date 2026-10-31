@@ -49,7 +49,9 @@ def test_ai_priority_can_change_selection_without_inventing_places():
 def test_provider_keeps_source_description_and_new_categories(tmp_path):
     async def exercise():
         data = {"elements": [{"id": 1, "type": "node", "lat": 52, "lon": 21.01,
-            "tags": {"name": "Muzeum", "tourism": "museum", "description:pl": "<b>Historia</b> miasta.",
+            "tags": {"name": "Muzeum", "name:en": "City Museum", "tourism": "museum",
+                     "description:pl": "Historia miasta.", "description": "Local description",
+                     "description:en": "<b>History</b> of the city.",
                      "wikipedia": "pl:Muzeum"}},
             {"id": 2, "type": "node", "lat": 52, "lon": 21.02,
              "tags": {"name": "Prywatne", "tourism": "museum", "access": "private"}}]}
@@ -58,7 +60,8 @@ def test_provider_keeps_source_description_and_new_categories(tmp_path):
             places = await provider.along(Line([Point(lat=52, lon=21), Point(lat=52, lon=21.1)]))
             assert len(places) == 1
             assert places[0].category == "museum"
-            assert places[0].description == "Historia miasta."
+            assert places[0].name == "City Museum"
+            assert places[0].description == "History of the city."
             assert places[0].wikipedia == "pl:Muzeum"
     asyncio.run(exercise())
 

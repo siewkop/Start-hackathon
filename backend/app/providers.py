@@ -41,15 +41,15 @@ class ExternalServices:
             try:
                 response = await self.client.get(url, params=params, timeout=timeout)
                 if response.status_code == 429:
-                    raise HTTPException(503, "Dostawca map jest zajęty. Spróbuj za chwilę.")
+                    raise HTTPException(503, "The map service is busy. Try again shortly.")
                 if response.status_code == 400 and group == "routing":
                     error = response.json()
                     if isinstance(error, dict) and error.get("code") in ("NoSegment", "NoRoute"):
-                        raise HTTPException(422, "Nie znaleziono drogi przy wybranym punkcie. Przesuń go bliżej ścieżki.")
+                        raise HTTPException(422, "No road found near this point. Move it closer to a path.")
                 response.raise_for_status()
                 data = response.json()
             except (httpx.HTTPError, ValueError) as exc:
-                raise HTTPException(502, "Usługa map jest niedostępna. Spróbuj ponownie.") from exc
+                raise HTTPException(502, "The map service is unavailable. Please try again.") from exc
             self.storage.cache_put(key, data, ttl)
             return data
 
@@ -59,7 +59,7 @@ class ExternalServices:
             try:
                 return await self._recreation_plan(request, timeout)
             except HTTPException:
-                warning = "Profil rekreacyjny jest niedostępny. Użyto standardowego wyznaczania trasy."
+                warning = "The leisure profile is unavailable. Used standard routing instead."
         coordinates = ";".join(f"{p.lon:.6f},{p.lat:.6f}" for p in request.points)
         url = f"{self.urls[request.profile]}/route/v1/driving/{coordinates}"
         params = {"overview": "full", "geometries": "geojson", "steps": "false"}
@@ -67,7 +67,7 @@ class ExternalServices:
             params["radiuses"] = ";".join([str(snap_radius)] * len(request.points))
         data = await self._get(url, params, "routing", 3600, timeout=timeout)
         if not isinstance(data, dict) or data.get("code") != "Ok" or not data.get("routes"):
-            raise HTTPException(422, "Nie znaleziono trasy. Wybierz punkty bliżej ścieżek lub dróg.")
+            raise HTTPException(422, "No route found. Choose points closer to paths or roads.")
         try:
             result = data["routes"][0]
             return Route(id=str(uuid4()), profile=request.profile, points=request.points,
@@ -75,7 +75,7 @@ class ExternalServices:
                          distance_m=result["distance"], duration_s=result["duration"],
                          created_at=datetime.now(timezone.utc), recreation=request.recreation, routing_warning=warning)
         except (KeyError, TypeError, IndexError, ValidationError) as exc:
-            raise HTTPException(502, "Usługa tras zwróciła nieprawidłowe dane.") from exc
+            raise HTTPException(502, "The routing service returned invalid data.") from exc
 
     async def _recreation_plan(self, request: PlanRequest, timeout: float) -> Route:
         profile = "hiking-beta" if request.profile == Profile.hike else "trekking"
@@ -103,10 +103,10 @@ class ExternalServices:
                          points=request.points, geometry=geometry, distance_m=float(props["track-length"]),
                          duration_s=float(props["total-time"]), created_at=datetime.now(timezone.utc), routing_engine="brouter")
         except (KeyError, TypeError, ValueError, StopIteration, ValidationError) as exc:
-            raise HTTPException(502, "Nie udało się odczytać trasy rekreacyjnej.") from exc
+            raise HTTPException(502, "Could not read the leisure route.") from exc
 
     async def search(self, query: str) -> list[Place]:
-        data = await self._get(f"{self.photon_url}/api/", {"q": query, "limit": 5}, "search", 86400)
+        data = await self._get(f"{self.photon_url}/api/", {"q": query, "limit": 5, "lang": "en"}, "search", 86400)
         try:
             places = []
             seen = set()
@@ -122,4 +122,4 @@ class ExternalServices:
                     places.append(place)
             return places
         except (KeyError, TypeError, ValueError, ValidationError) as exc:
-            raise HTTPException(502, "Wyszukiwarka zwróciła nieprawidłowe dane.") from exc
+            raise HTTPException(502, "The search service returned invalid data.") from exc

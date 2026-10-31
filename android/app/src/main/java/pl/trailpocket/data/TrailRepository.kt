@@ -39,10 +39,10 @@ class TrailRepository(context: Context) {
         private set(value) { prefs.edit().putString("base_url", value).apply() }
 
     fun updateUrl(value: String) {
-        val parsed = value.trim().toHttpUrlOrNull() ?: error("Wpisz poprawny adres http:// lub https://.")
+        val parsed = value.trim().toHttpUrlOrNull() ?: error("Enter a valid http:// or https:// address.")
         require(parsed.encodedPath == "/" && parsed.query == null && parsed.fragment == null &&
-            parsed.username.isEmpty() && parsed.password.isEmpty()) { "Podaj sam adres serwera, np. http://192.168.1.10:8000." }
-        require(BuildConfig.DEBUG || parsed.isHttps) { "Wersja release wymaga HTTPS." }
+            parsed.username.isEmpty() && parsed.password.isEmpty()) { "Enter only the server address, e.g. http://192.168.1.10:8000." }
+        require(BuildConfig.DEBUG || parsed.isHttps) { "The release version requires HTTPS." }
         baseUrl = parsed.toString().trimEnd('/')
     }
 
@@ -64,18 +64,18 @@ class TrailRepository(context: Context) {
                     val text = response.body?.string().orEmpty()
                     if (!response.isSuccessful) {
                         if (path == "/api/v1/sketch-plans" && response.code == 404) {
-                            throw ApiException("Uruchom ponownie zaktualizowany backend. Ten serwer nie obsługuje jeszcze rysowania tras.")
+                            throw ApiException("Restart the updated backend. This server does not support sketch routes yet.")
                         }
                         val detail = runCatching {
                             json.parseToJsonElement(text).jsonObject["detail"]?.jsonPrimitive?.content
                         }.getOrNull()
-                        throw ApiException(detail ?: "Serwer odrzucił żądanie (${response.code}). Sprawdź dane i spróbuj ponownie.")
+                        throw ApiException(detail ?: "The server rejected the request (${response.code}). Check your input and try again.")
                     }
                     text
                 }
             } catch (e: IOException) {
                 if (e is ApiException) throw e
-                throw IOException("Brak połączenia z backendem. Sprawdź adres w ustawieniach i uruchom serwer.", e)
+                throw IOException("Cannot connect to the backend. Check the address in settings and start the server.", e)
             }
         }
 

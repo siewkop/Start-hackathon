@@ -27,19 +27,19 @@ internal fun SketchToolbar(state: PlannerState, modifier: Modifier, onDraw: () -
             if (state.planningMode == PlanningMode.POINTS) {
                 TextButton(onClick = onDraw, enabled = !state.busy) {
                     Icon(Icons.Outlined.Gesture, null, Modifier.size(22.dp))
-                    Text("Narysuj trasę", Modifier.padding(start = 8.dp), fontWeight = FontWeight.SemiBold)
+                    Text("Draw a route", Modifier.padding(start = 8.dp), fontWeight = FontWeight.SemiBold)
                 }
             } else {
                 FilterChip(selected = state.isDrawing, enabled = !state.busy, onClick = onDraw,
                     leadingIcon = { Icon(if (state.isDrawing) Icons.Outlined.Gesture else Icons.Outlined.PanTool, null, Modifier.size(18.dp)) },
-                    label = { Text(if (state.isDrawing) "Rysowanie" else "Rysuj") })
+                    label = { Text(if (state.isDrawing) "Drawing" else "Draw") })
                 IconButton(onClick = onUndo, enabled = state.canUndoSketch && !state.busy) {
-                    Icon(Icons.AutoMirrored.Outlined.Undo, "Cofnij ostatni fragment lub postój")
+                    Icon(Icons.AutoMirrored.Outlined.Undo, "Undo the last section or stop")
                 }
                 if (showPlan && state.sketch.path.size >= 2 && state.route == null) TextButton(onClick = onPlan, enabled = !state.busy) {
                     if (state.busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                     else Icon(Icons.Outlined.Route, null, Modifier.size(20.dp))
-                    Text(if (state.busy) "Układam…" else "Wyznacz", Modifier.padding(start = 4.dp))
+                    Text(if (state.busy) "Planning…" else "Plan route", Modifier.padding(start = 4.dp))
                 }
             }
         }
@@ -54,16 +54,16 @@ internal fun AttractionSheet(poi: Attraction, onClose: () -> Unit) {
         Column(Modifier.padding(horizontal = 24.dp).navigationBarsPadding().verticalScroll(rememberScrollState())) {
             Text("${poi.categorySymbol()} · ${poi.categoryLabel()}", color = Color(poi.categoryColor()), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             Text(poi.name, fontSize = 25.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
-            Text("Około ${poi.distanceToRouteM.roundToInt()} m od wyznaczonej trasy.", fontSize = 14.sp)
+            Text("About ${poi.distanceToRouteM.roundToInt()} m from your route.", fontSize = 14.sp)
             if (poi.description.isNotBlank()) Text(poi.description, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp))
             poi.wikipediaUrl()?.let { url ->
-                TextButton(onClick = { uriHandler.openUri(url) }) { Text("Przeczytaj opis w Wikipedii ↗") }
+                TextButton(onClick = { uriHandler.openUri(url) }) { Text("Read more on Wikipedia ↗") }
             }
-            if (poi.selectedForDetour) Text("Wybrany wariant prowadzi w pobliżu tego miejsca.", fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
-            Text("Miejsce pochodzi z danych OpenStreetMap. Sprawdź szczegóły i dostępność przed wizytą.",
+            if (poi.selectedForDetour) Text("Your route passes near this place.", fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
+            Text("Place information comes from OpenStreetMap. Check details and access before visiting.",
                 fontSize = 12.sp, modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
             Button(onClick = { uriHandler.openUri(poi.sourceUrl()) }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
-                Text("Zobacz źródło w OpenStreetMap")
+                Text("View on OpenStreetMap")
             }
             Spacer(Modifier.height(24.dp))
         }

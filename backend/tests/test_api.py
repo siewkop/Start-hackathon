@@ -150,7 +150,7 @@ def test_timeout_is_actionable(tmp_path):
     with TestClient(app) as client:
         result = client.post("/api/v1/plans", json=PLAN, headers=OWNER)
         assert result.status_code == 502
-        assert "niedostępna" in result.json()["detail"]
+        assert "unavailable" in result.json()["detail"]
 
 
 def test_routes_persist_across_restart(api, tmp_path):

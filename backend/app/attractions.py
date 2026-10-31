@@ -38,7 +38,7 @@ def category_for(tags):
 def metadata(tags):
     wiki = str(tags.get("wikipedia", ""))[:250]
     if not re.fullmatch(r"[a-z]{2,12}:[^\x00-\x1f]+", wiki): wiki = ""
-    description = str(tags.get("description:pl") or tags.get("description") or "")
+    description = str(tags.get("description:en") or tags.get("description") or "")
     description = re.sub(r"<[^>]*>", "", description)
     return dict(kind=str(tags.get("tourism") or tags.get("historic") or tags.get("natural") or tags.get("leisure") or "")[:100],
                 description=" ".join(description.split())[:800], wikipedia=wiki)
@@ -115,7 +115,7 @@ class AttractionsProvider:
                 except (httpx.HTTPError, ValueError) as exc:
                     if self.fallback is not None:
                         return await self._photon(line)
-                    raise HTTPException(503, "Nie udało się pobrać ciekawych miejsc z OpenStreetMap.") from exc
+                    raise HTTPException(503, "Could not load interesting places from OpenStreetMap.") from exc
         result, seen = [], set()
         for item in data["elements"][:600]:
             try:
@@ -124,7 +124,7 @@ class AttractionsProvider:
                     continue
                 center = item if item["type"] == "node" else item["center"]
                 poi = Attraction(id=f'{item["type"]}/{int(item["id"])}', lat=center["lat"], lon=center["lon"],
-                                 name=str(tags["name"])[:160], category=category_for(tags), **metadata(tags))
+                                 name=str(tags.get("name:en") or tags["name"])[:160], category=category_for(tags), **metadata(tags))
                 signature = (poi.name.casefold(), round(poi.lat, 4), round(poi.lon, 4))
                 if signature not in seen and line.locate(poi)[0] <= 1250:
                     seen.add(signature)
@@ -145,7 +145,7 @@ class AttractionsProvider:
         except TimeoutError as exc:
             if partial:
                 return deduplicate(partial)
-            raise HTTPException(503, "Przekroczono czas wyszukiwania atrakcji.") from exc
+            raise HTTPException(503, "Finding nearby places timed out.") from exc
 
     async def _photon_queries(self, line: Line, partial) -> list[Attraction]:
         """At most six cached queries; equal-distance samples cover the corridor fairly."""
@@ -158,7 +158,7 @@ class AttractionsProvider:
             try:
                 data = await self.fallback._get(f"{self.fallback.photon_url}/reverse", {
                     "lat": round(point.lat, 4), "lon": round(point.lon, 4), "radius": 1.25,
-                    "limit": 24, "osm_tag": filters}, "search", 86400, timeout=8)
+                    "limit": 24, "lang": "en", "osm_tag": filters}, "search", 86400, timeout=8)
                 if not isinstance(data, dict) or not isinstance(data.get("features"), list):
                     continue
                 success = True
@@ -181,7 +181,7 @@ class AttractionsProvider:
             except HTTPException:
                 continue
         if not success:
-            raise HTTPException(503, "Zapasowe źródło atrakcji też jest niedostępne.")
+            raise HTTPException(503, "The alternative source of places is also unavailable.")
         return result
 
 
@@ -229,4 +229,4 @@ class PoiRanker:
             self.storage.cache_put(key, ids, 86400)
             return [allowed[i] for i in ids] + remainder, True, None
         except (httpx.HTTPError, ValueError, KeyError, TypeError):
-            return candidates + remainder, False, "Ranking GPT był niedostępny. Użyto oceny miejsc z OpenStreetMap."
+            return candidates + remainder, False, "GPT ranking was unavailable. Used the rule-based OpenStreetMap ranking."

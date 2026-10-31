@@ -6,14 +6,14 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 @Serializable
-data class Point(val lat: Double, val lon: Double, val name: String = "Punkt na mapie") {
+data class Point(val lat: Double, val lon: Double, val name: String = "Map point") {
     fun coordinates() = String.format(Locale.US, "%.5f, %.5f", lat, lon)
 }
 
 @Serializable
 enum class Profile(val label: String) {
-    @SerialName("hike") HIKE("Pieszo"),
-    @SerialName("bike") BIKE("Rowerem")
+    @SerialName("hike") HIKE("Walking"),
+    @SerialName("bike") BIKE("Cycling")
 }
 
 @Serializable
@@ -23,9 +23,9 @@ enum class PlanningMode { POINTS, SKETCH }
 
 @Serializable
 enum class Interest(val label: String) {
-    @SerialName("balanced") BALANCED("Miks"),
-    @SerialName("nature") NATURE("Przyroda"),
-    @SerialName("culture") CULTURE("Historia")
+    @SerialName("balanced") BALANCED("Mix"),
+    @SerialName("nature") NATURE("Nature"),
+    @SerialName("culture") CULTURE("History")
 }
 
 @Serializable
@@ -41,7 +41,7 @@ data class Attraction(val id: String, val lat: Double, val lon: Double, val name
     val kind: String = "", val description: String = "", val wikipedia: String = "",
     @SerialName("distance_to_route_m") val distanceToRouteM: Double = 0.0,
     @SerialName("selected_for_detour") val selectedForDetour: Boolean = false) {
-    fun categoryLabel() = when (category) { "nature" -> "Przyroda"; "view" -> "Punkt widokowy"; "art" -> "Sztuka"; "museum" -> "Muzeum"; else -> "Historia" }
+    fun categoryLabel() = when (category) { "nature" -> "Nature"; "view" -> "Viewpoint"; "art" -> "Art"; "museum" -> "Museum"; else -> "History" }
     fun categoryColor(): Int = when (category) {
         "nature" -> 0xFF1976B9.toInt()
         "view" -> 0xFFD18416.toInt()
@@ -49,7 +49,7 @@ data class Attraction(val id: String, val lat: Double, val lon: Double, val name
         "museum" -> 0xFF7255AD.toInt()
         else -> 0xFF865B3B.toInt()
     }
-    fun categorySymbol() = when (category) { "nature" -> "N"; "view" -> "W"; "art" -> "S"; "museum" -> "M"; else -> "H" }
+    fun categorySymbol() = when (category) { "nature" -> "N"; "view" -> "V"; "art" -> "A"; "museum" -> "M"; else -> "H" }
     fun wikipediaUrl(): String? {
         val parts = wikipedia.split(":", limit = 2)
         if (parts.size != 2 || !parts[0].matches(Regex("[a-z]{2,12}")) || parts[1].isBlank()) return null
@@ -82,7 +82,7 @@ data class Route(
     val discovery: Discovery? = null
 ) {
     fun distanceLabel() = if (distanceM < 1000) "${distanceM.roundToInt()} m"
-        else String.format(Locale.forLanguageTag("pl"), "%.1f km", distanceM / 1000)
+        else String.format(Locale.US, "%.1f km", distanceM / 1000)
     fun durationLabel(): String {
         val minutes = (durationS / 60).roundToInt().coerceAtLeast(1)
         return if (minutes < 60) "$minutes min" else "${minutes / 60} h ${minutes % 60} min"

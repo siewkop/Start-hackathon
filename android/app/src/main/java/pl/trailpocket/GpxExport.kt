@@ -23,11 +23,11 @@ suspend fun shareGpx(context: Context, route: Route) {
             xml.attribute(null, "creator", "Trail Pocket")
             route.discovery?.stops?.forEachIndexed { index, point ->
                 xml.startTag(null, "wpt").attribute(null, "lat", point.lat.toString()).attribute(null, "lon", point.lon.toString())
-                xml.startTag(null, "name").text("Postój ${index + 1}").endTag(null, "name")
+                xml.startTag(null, "name").text("Stop ${index + 1}").endTag(null, "name")
                 xml.endTag(null, "wpt")
             }
             xml.startTag(null, "trk")
-            xml.startTag(null, "name").text(route.name ?: "Moja trasa").endTag(null, "name")
+            xml.startTag(null, "name").text(route.name ?: "My route").endTag(null, "name")
             xml.startTag(null, "trkseg")
             route.geometry.coordinates.forEach { (lon, lat) ->
                 xml.startTag(null, "trkpt").attribute(null, "lat", lat.toString())
@@ -42,8 +42,8 @@ suspend fun shareGpx(context: Context, route: Route) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "application/gpx+xml"
         putExtra(Intent.EXTRA_STREAM, uri)
-        clipData = ClipData.newRawUri("Trasa GPX", uri)
+        clipData = ClipData.newRawUri("GPX route", uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(Intent.createChooser(intent, "Udostępnij trasę GPX"))
+    context.startActivity(Intent.createChooser(intent, "Share GPX route"))
 }

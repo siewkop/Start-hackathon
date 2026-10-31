@@ -17,13 +17,13 @@ import pl.trailpocket.data.Point
 suspend fun currentLocation(context: Context): Point = withTimeout(25_000L) {
     val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
     val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-    check(fine || coarse) { "Zezwól aplikacji na dostęp do lokalizacji." }
+    check(fine || coarse) { "Allow the app to access your location." }
     val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     val providers = buildList {
         if (fine && manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) add(LocationManager.GPS_PROVIDER)
         if (manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) add(LocationManager.NETWORK_PROVIDER)
     }
-    check(providers.isNotEmpty()) { "Włącz lokalizację w ustawieniach telefonu." }
+    check(providers.isNotEmpty()) { "Turn on location in your phone settings." }
     suspendCancellableCoroutine { continuation ->
         val signals = providers.map { CancellationSignal() }
         continuation.invokeOnCancellation { signals.forEach { it.cancel() } }
@@ -31,10 +31,10 @@ suspend fun currentLocation(context: Context): Point = withTimeout(25_000L) {
         fun receive(location: Location?) {
             if (!continuation.isActive) return
             if (location != null) {
-                continuation.resume(Point(location.latitude, location.longitude, "Moja lokalizacja"))
+                continuation.resume(Point(location.latitude, location.longitude, "My location"))
                 signals.forEach { it.cancel() }
             } else if (--remaining == 0) {
-                continuation.resumeWithException(IllegalStateException("Nie udało się ustalić lokalizacji. Spróbuj na zewnątrz."))
+                continuation.resumeWithException(IllegalStateException("Could not get your location. Try again outdoors."))
             }
         }
         providers.forEachIndexed { index, provider ->

@@ -44,7 +44,7 @@ def create_app(db_path: str | None = None, transport: httpx.AsyncBaseTransport |
             yield
 
     app = FastAPI(title="Trail Pocket API", version="1.2.0", lifespan=lifespan,
-                  description="Planowanie i zapis tras. Wymagany nagłówek X-Client-Token: 64 znaki hex.")
+                  description="Route planning and saving. Requires an X-Client-Token header with 64 hexadecimal characters.")
 
     @app.get("/health")
     def health():
@@ -53,7 +53,7 @@ def create_app(db_path: str | None = None, transport: httpx.AsyncBaseTransport |
     @app.get("/api/v1/places", response_model=list[Place])
     async def search_places(owner: Owner, q: Annotated[str, Query(min_length=2, max_length=160)]):
         if len(q.strip()) < 2:
-            raise HTTPException(422, "Wpisz co najmniej dwa znaki.")
+            raise HTTPException(422, "Enter at least two characters.")
         return await app.state.services.search(q.strip())
 
     @app.post("/api/v1/plans", response_model=Route)
@@ -72,7 +72,7 @@ def create_app(db_path: str | None = None, transport: httpx.AsyncBaseTransport |
     def save_route(request: SaveRequest, owner: Owner):
         plan = app.state.storage.get_plan(owner, request.plan_id)
         if plan is None:
-            raise HTTPException(404, "Plan wygasł. Wyznacz trasę ponownie.")
+            raise HTTPException(404, "This plan has expired. Calculate the route again.")
         saved = plan.model_copy(update={"id": str(uuid4()), "name": request.name})
         return app.state.storage.save_route(owner, request.plan_id, saved)
 
@@ -84,13 +84,13 @@ def create_app(db_path: str | None = None, transport: httpx.AsyncBaseTransport |
     def get_route(route_id: UUID, owner: Owner):
         route = app.state.storage.get_route(owner, str(route_id))
         if route is None:
-            raise HTTPException(404, "Nie znaleziono trasy.")
+            raise HTTPException(404, "Route not found.")
         return route
 
     @app.delete("/api/v1/routes/{route_id}", status_code=204)
     def delete_route(route_id: UUID, owner: Owner):
         if not app.state.storage.delete_route(owner, str(route_id)):
-            raise HTTPException(404, "Nie znaleziono trasy.")
+            raise HTTPException(404, "Route not found.")
         return Response(status_code=204)
 
     @app.get("/api/v1/routes/{route_id}/gpx")
@@ -101,7 +101,7 @@ def create_app(db_path: str | None = None, transport: httpx.AsyncBaseTransport |
         gpx = ET.Element(ns + "gpx", version="1.1", creator="Trail Pocket")
         for i, stop in enumerate(route.discovery.stops if route.discovery else []):
             waypoint = ET.SubElement(gpx, ns + "wpt", lat=str(stop.lat), lon=str(stop.lon))
-            ET.SubElement(waypoint, ns + "name").text = f"Postój {i + 1}"
+            ET.SubElement(waypoint, ns + "name").text = f"Stop {i + 1}"
         trk = ET.SubElement(gpx, ns + "trk")
         ET.SubElement(trk, ns + "name").text = route.name
         segment = ET.SubElement(trk, ns + "trkseg")

@@ -94,7 +94,7 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
     private fun commitDraft(draft: SketchDraft) {
         if (mutable.value.busy) return
         if (draft.path.size > 2000 || draft.stopIndices.size > 8) {
-            error("Szkic może mieć maksymalnie 8 postojów. Skróć szkic lub cofnij ostatni fragment.")
+            error("A sketch can have up to 8 stops. Shorten it or undo the last section.")
             return
         }
         sketchHistory.addLast(mutable.value.sketch)
@@ -174,7 +174,7 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
         val end = snapshot.end ?: return
         if (snapshot.busy) return
         if (start.lat == end.lat && start.lon == end.lon) {
-            error("Wybierz różne punkty startu i celu.")
+            error("Choose different start and finish points.")
             return
         }
         planJob = viewModelScope.launch {
@@ -183,7 +183,7 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
                 val route = repository.plan(snapshot.profile, listOf(start, end), snapshot.recreation)
                 mutable.update { it.copy(route = route, isSaved = false, cameraVersion = it.cameraVersion + 1) }
             } catch (e: CancellationException) { throw e
-            } catch (e: Exception) { error(e.message ?: "Nie udało się wyznaczyć trasy.")
+            } catch (e: Exception) { error(e.message ?: "Could not find a route.")
             } finally { mutable.update { it.copy(busy = false) } }
         }
     }
@@ -197,7 +197,7 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
                 val route = repository.sketch(snapshot.profile, snapshot.sketch, snapshot.interest, snapshot.maxExtraRatio, snapshot.recreation)
                 mutable.update { it.copy(route = route, isSaved = false, cameraVersion = it.cameraVersion + 1) }
             } catch (e: CancellationException) { throw e
-            } catch (e: Exception) { error(e.message ?: "Nie udało się dopasować szkicu do ścieżek.")
+            } catch (e: Exception) { error(e.message ?: "Could not match your sketch to paths.")
             } finally { mutable.update { it.copy(busy = false) } }
         }
     }
@@ -212,14 +212,14 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
                 mutable.update { it.copy(places = places) }
             }
             catch (e: CancellationException) { throw e }
-            catch (e: Exception) { error(e.message ?: "Wyszukiwanie nie powiodło się.") }
+            catch (e: Exception) { error(e.message ?: "Search failed. Please try again.") }
             finally { mutable.update { it.copy(searching = false) } }
         }
     }
 
     private suspend fun repositorySearch(query: String): List<Point> {
         val results = repository.search(query.trim())
-        if (results.isEmpty()) mutable.update { it.copy(message = "Brak wyników. Spróbuj podać miejscowość.") }
+        if (results.isEmpty()) mutable.update { it.copy(message = "No results. Try a town or city name.") }
         return results
     }
 
@@ -236,10 +236,10 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
             mutable.update { it.copy(busy = true, error = null) }
             try {
                 val saved = repository.save(route, name.trim())
-                mutable.update { it.copy(route = saved, isSaved = true, message = "Trasa zapisana") }
+                mutable.update { it.copy(route = saved, isSaved = true, message = "Route saved") }
                 loadRoutes()
             } catch (e: CancellationException) { throw e
-            } catch (e: Exception) { error(e.message ?: "Nie udało się zapisać trasy.")
+            } catch (e: Exception) { error(e.message ?: "Could not save your route.")
             } finally { mutable.update { it.copy(busy = false) } }
         }
     }
@@ -279,12 +279,12 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
             mutable.update { it.copy(busy = true) }
             try {
                 repository.delete(route)
-                mutable.update { it.copy(message = "Trasa usunięta",
+                mutable.update { it.copy(message = "Route deleted",
                     route = if (it.route?.id == route.id) null else it.route,
                     isSaved = if (it.route?.id == route.id) false else it.isSaved) }
                 loadRoutes()
             } catch (e: CancellationException) { throw e
-            } catch (e: Exception) { error(e.message ?: "Nie udało się usunąć trasy.")
+            } catch (e: Exception) { error(e.message ?: "Could not delete your route.")
             } finally { mutable.update { it.copy(busy = false) } }
         }
     }
@@ -297,9 +297,9 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
             planJob?.cancel()
             searchJob?.cancel()
             sketchHistory.clear()
-            mutable.value = PlannerState(baseUrl = repository.baseUrl, message = "Adres serwera zapisany")
+            mutable.value = PlannerState(baseUrl = repository.baseUrl, message = "Server address saved")
             refresh()
-        }.onFailure { error(it.message ?: "Nieprawidłowy adres.") }
+        }.onFailure { error(it.message ?: "Invalid address.") }
     }
 
     fun checkConnection() {
@@ -308,9 +308,9 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
             mutable.update { it.copy(busy = true) }
             try {
                 repository.health()
-                mutable.update { it.copy(message = "Backend odpowiada poprawnie") }
+                mutable.update { it.copy(message = "Connected to the backend") }
             } catch (e: CancellationException) { throw e
-            } catch (e: Exception) { error(e.message ?: "Brak połączenia.")
+            } catch (e: Exception) { error(e.message ?: "No connection.")
             } finally { mutable.update { it.copy(busy = false) } }
         }
     }
@@ -319,11 +319,11 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
         if (mutable.value.busy) return
         if (mutable.value.planningMode == PlanningMode.SKETCH) {
             mutable.update { it.copy(focus = point, route = null, isSaved = false, isDrawing = false,
-                cameraVersion = it.cameraVersion + 1, message = "Rysuj w wybranej okolicy. Przytrzymaj palec, aby dodać postój.") }
+                cameraVersion = it.cameraVersion + 1, message = "Draw in this area. Hold your finger to add a stop.") }
             return
         }
         mutable.update { it.copy(start = point, route = null, isSaved = false, selectingStart = false,
-            focus = point, cameraVersion = it.cameraVersion + 1, message = "Twoja lokalizacja ustawiona jako start") }
+            focus = point, cameraVersion = it.cameraVersion + 1, message = "Your location is now the starting point") }
     }
 
     fun error(message: String) { mutable.update { it.copy(error = message) } }

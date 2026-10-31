@@ -14,16 +14,16 @@ class SketchPlanner:
     async def plan(self, request: SketchRequest) -> Route:
         line = Line(request.path)
         if line.length < 80:
-            raise HTTPException(422, "Narysuj trasę dłuższą niż 80 metrów. Przybliż mapę, aby rysować dokładniej.")
+            raise HTTPException(422, "Draw a route longer than 80 metres. Zoom in to draw more precisely.")
         if line.length > 120_000:
-            raise HTTPException(422, "Szkic jest za długi. Narysuj trasę do 120 km.")
+            raise HTTPException(422, "The sketch is too long. Draw a route up to 120 km.")
         indices = anchors(line, request.stop_indices)
         required = {0, len(request.path) - 1, *request.stop_indices}
-        stops = [request.path[i].model_copy(update={"name": f"Postój {n + 1}"})
+        stops = [request.path[i].model_copy(update={"name": f"Stop {n + 1}"})
                  for n, i in enumerate(request.stop_indices)]
         points = routing_points([request.path[i] for i in indices])
         if len(points) < 2:
-            raise HTTPException(422, "Nie można odczytać przebiegu szkicu. Narysuj wyraźniejszą trasę.")
+            raise HTTPException(422, "Could not read the sketch. Draw a clearer route.")
         baseline = await self.routing.plan(PlanRequest(profile=request.profile, points=points, recreation=request.recreation), snap_radius=450, timeout=15)
         baseline = clean_spurs(baseline, request.path, stops)
         self._check_stops(baseline, stops)
@@ -32,12 +32,12 @@ class SketchPlanner:
         base_sample = base_line.points[::max(1, len(base_line.points) // 60)]
         base_max_gap = max(line.locate(p)[0] for p in base_sample)
         if base_max_gap > 1000:
-            warnings.append("Dostępne drogi miejscami odbiegają od szkicu o ponad kilometr. Sprawdź przebieg przed wyruszeniem.")
+            warnings.append("Available roads diverge from the sketch by over a kilometre in places. Check the route before setting off.")
         try:
             pois = await self.places.along(line)
         except HTTPException:
             pois = []
-            warnings.append("Nie udało się pobrać atrakcji. Dopasowano szkic do ścieżek, bez oceny ciekawych miejsc.")
+            warnings.append("Could not load attractions. Matched the sketch to paths without ranking nearby places.")
         candidates = curated(pois, base_line, request.interest, limit=32)
         candidates = [p.model_copy(update={"distance_to_route_m": round(base_line.locate(p)[0])}) for p in candidates]
         candidates, ai_used, ai_warning = await self.ranker.rank(candidates, request.interest)
@@ -111,17 +111,17 @@ class SketchPlanner:
         assessed = [(assess(v), v) for v in variants]
         (score, nearby), (best, detour_id) = max(assessed, key=lambda x: x[0][0])
         if not pois and not warnings:
-            warnings.append("W danych OpenStreetMap nie znaleziono oznaczonych atrakcji w pobliżu szkicu.")
+            warnings.append("No mapped attractions were found near the sketch in OpenStreetMap.")
         attractions = [p.model_copy(update={"distance_to_route_m": round(gap, 1),
                                            "selected_for_detour": p.id == detour_id}) for p, gap in nearby]
         extra = max(0.0, best.distance_m - baseline.distance_m)
-        explanation = (f"Porównano {len(variants)} poprawnych wariantów. Wybrano trasę z {len(attractions)} "
-                       f"oznaczonymi miejscami w pobliżu, zachowując {len(stops)} postojów i ogólny przebieg szkicu.")
+        explanation = (f"Compared {len(variants)} valid options. Selected a route with {len(attractions)} "
+                       f"nearby places, preserving your {len(stops)} stops and the general shape of your sketch.")
         if extra >= 50:
-            explanation += f" Dodatkowa droga: około {round(extra)} m."
+            explanation += f" Extra distance: about {round(extra)} m."
         if len(variants) == 1:
-            explanation = (f"Dopasowano szkic do dróg i ścieżek. W pobliżu trasy: {len(attractions)} miejsc; "
-                           f"zaplanowane postoje: {len(stops)}.")
+            explanation = (f"Matched the sketch to roads and paths. Nearby places: {len(attractions)}; "
+                           f"planned stops: {len(stops)}.")
         return best.model_copy(update={"discovery": Discovery(
             sketch=request.path, stops=stops, stop_indices=request.stop_indices, attractions=attractions,
             interest=request.interest, considered_variants=len(variants), baseline_distance_m=baseline.distance_m,
@@ -133,4 +133,4 @@ class SketchPlanner:
             return
         full = Line([Point(lon=lon, lat=lat) for lon, lat in route.geometry.coordinates])
         if any(full.locate(stop)[0] > 180 for stop in stops):
-            raise HTTPException(422, "Nie można poprowadzić trasy blisko zaznaczonego postoju. Przesuń go bliżej dostępnej ścieżki.")
+            raise HTTPException(422, "Cannot route close to a marked stop. Move it closer to an accessible path.")

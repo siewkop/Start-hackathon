@@ -12,8 +12,8 @@ android {
         applicationId = "pl.trailpocket"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
         buildConfigField("String", "DEFAULT_API_URL", "\"http://10.0.2.2:8000\"")
         manifestPlaceholders["cleartextTraffic"] = "false"
     }

@@ -61,7 +61,7 @@ internal class SketchTouchHandler(
                 rejected = false
                 limitReported = false
                 if (map.zoomLevelDouble < 11.5) {
-                    message("Przybliż mapę przyciskiem +, aby dokładniej narysować trasę.")
+                    message("Use + to zoom in and draw more precisely.")
                     rejected = true
                     return true
                 }
@@ -79,7 +79,7 @@ internal class SketchTouchHandler(
                         if (gap(old[nearest]) < 28 * density) stopOnly = nearest
                         else {
                             rejected = true
-                            message("Kolejny fragment zacznij przy końcu szkicu. Na istniejącej linii możesz przytrzymać palec, aby dodać postój.")
+                            message("Continue from the end of your sketch. Hold on the existing line to add a stop.")
                             return true
                         }
                     }
@@ -103,7 +103,7 @@ internal class SketchTouchHandler(
                     if (stopOnly != null) {
                         rejected = true
                         cancelHold()
-                        message("Przytrzymaj palec na linii, aby zaznaczyć postój. Nowy fragment zacznij na końcu szkicu.")
+                        message("Hold on the line to add a stop. Start a new section at the end of your sketch.")
                         return true
                     }
                     armHold(event.x, event.y)
@@ -125,12 +125,12 @@ internal class SketchTouchHandler(
     }
 
     private fun geo(x: Float, y: Float): Point = map.projection.fromPixels(x.toInt(), y.toInt()).let {
-        Point(it.latitude, it.longitude, "Szkic")
+        Point(it.latitude, it.longitude, "Sketch")
     }
 
     private fun append(x: Float, y: Float) {
         if (draft().path.size + points.size >= 2000) {
-            if (!limitReported) message("Szkic jest bardzo szczegółowy. Zakończ rysowanie lub cofnij ostatni fragment.")
+            if (!limitReported) message("Your sketch has reached the detail limit. Finish drawing or undo the last section.")
             limitReported = true
             return
         }
@@ -150,7 +150,7 @@ internal class SketchTouchHandler(
             val existing = stopOnly
             if (existing != null && (existing in draft().stopIndices || markedExisting)) return@Runnable
             if (draft().stopIndices.size + stops.size >= 8) {
-                message("Możesz zaznaczyć maksymalnie 8 postojów.")
+                message("You can add up to 8 stops.")
                 return@Runnable
             }
             val point = if (existing != null) {
@@ -167,7 +167,7 @@ internal class SketchTouchHandler(
                 position = GeoPoint(point.lat, point.lon)
                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                 icon = markerIcon(map.resources, "Ⅱ", Color.rgb(199, 91, 44))
-                title = "Zaplanowany postój"
+                title = "Planned stop"
             }.also { map.overlays.add(it) })
             map.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             map.invalidate()

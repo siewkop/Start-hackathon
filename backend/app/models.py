@@ -20,7 +20,7 @@ class Point(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     lat: float = Field(ge=-85.0, le=85.0)
     lon: float = Field(ge=-180.0, le=180.0)
-    name: str = Field(default="Punkt na mapie", max_length=160)
+    name: str = Field(default="Map point", max_length=160)
 
 
 class PlanRequest(BaseModel):
@@ -32,7 +32,7 @@ class PlanRequest(BaseModel):
     @model_validator(mode="after")
     def distinct_points(self):
         if any(a.lat == b.lat and a.lon == b.lon for a, b in zip(self.points, self.points[1:])):
-            raise ValueError("Kolejne punkty muszą być różne.")
+            raise ValueError("Consecutive points must be different.")
         return self
 
 
@@ -57,9 +57,9 @@ class SketchRequest(BaseModel):
     @model_validator(mode="after")
     def valid_stops(self):
         if len(set(self.stop_indices)) != len(self.stop_indices):
-            raise ValueError("Postoje nie mogą się powtarzać.")
+            raise ValueError("Stops must not be repeated.")
         if any(i < 0 or i >= len(self.path) for i in self.stop_indices):
-            raise ValueError("Postój musi wskazywać punkt szkicu.")
+            raise ValueError("A stop must refer to a point in the sketch.")
         self.stop_indices.sort()
         return self
 

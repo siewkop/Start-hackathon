@@ -60,7 +60,7 @@ def test_attractive_variant_preserves_stop_and_detour_limit(sketch_api):
     assert discovery["attractions"][0]["id"] == "node/123"
     assert discovery["attractions"][0]["selected_for_detour"] is True
     assert discovery["extra_distance_m"] <= discovery["baseline_distance_m"] * .25 + 5
-    assert discovery["stops"] == [{**PATH[5], "name": "Postój 1"}]
+    assert discovery["stops"] == [{**PATH[5], "name": "Stop 1"}]
     assert any(abs(p["lon"] - PATH[5]["lon"]) < 1e-8 for p in route["points"])
     routing_calls = [c for c in calls if "/route/" in c.url.path]
     assert len(routing_calls) <= 4
@@ -104,7 +104,7 @@ def test_poi_outage_returns_real_baseline_with_warning(sketch_api):
     result = client.post("/api/v1/sketch-plans", json=REQUEST, headers=OWNER)
     assert result.status_code == 200
     assert result.json()["discovery"]["attractions"] == []
-    assert "bez oceny" in result.json()["discovery"]["warnings"][0]
+    assert "without ranking" in result.json()["discovery"]["warnings"][0]
 
 
 def test_photon_backup_keeps_real_osm_ids_and_uses_bounded_lookups(tmp_path, monkeypatch):

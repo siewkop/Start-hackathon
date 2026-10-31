@@ -14,7 +14,7 @@ class RouteTest {
         }""")
         assertEquals(Profile.BIKE, route.profile)
         assertEquals(21.0, route.geometry.coordinates.first()[0], 0.0)
-        assertEquals("12,5 km", route.distanceLabel())
+        assertEquals("12.5 km", route.distanceLabel())
         assertEquals("1 h 5 min", route.durationLabel())
     }
 }
