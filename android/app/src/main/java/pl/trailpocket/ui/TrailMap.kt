@@ -2,6 +2,8 @@ package pl.trailpocket.ui
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.graphics.DashPathEffect
 import android.graphics.drawable.BitmapDrawable
@@ -47,7 +49,7 @@ private val PolandBounds = BoundingBox(55.05, 24.35, 48.8, 13.85)
 @Composable
 internal fun TrailMap(state: PlannerState, modifier: Modifier = Modifier, onTap: (Point) -> Unit,
     command: MapCommand? = null, onSketch: (SketchDraft) -> Unit = {}, onStop: (Int) -> Unit = {},
-    onMessage: (String) -> Unit = {}, onAttraction: (Attraction) -> Unit = {}) {
+    onMessage: (String) -> Unit = {}, onAttraction: (Attraction) -> Unit = {}, softMap: Boolean = true) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val currentTap by rememberUpdatedState(onTap)
@@ -179,6 +181,19 @@ internal fun TrailMap(state: PlannerState, modifier: Modifier = Modifier, onTap:
         stops.forEachIndexed { index, point ->
             map.overlays.add(marker(point, "${index + 1}", android.graphics.Color.rgb(199, 91, 44)))
         }
+        map.invalidate()
+    }
+    LaunchedEffect(softMap) {
+        val filter = if (softMap) {
+            val palette = ColorMatrix().apply { setSaturation(.55f) }
+            palette.postConcat(ColorMatrix(floatArrayOf(
+                .93f, 0f, 0f, 0f, 16f,
+                0f, .93f, 0f, 0f, 17f,
+                0f, 0f, .93f, 0f, 18f,
+                0f, 0f, 0f, 1f, 0f)))
+            ColorMatrixColorFilter(palette)
+        } else null
+        map.overlayManager.tilesOverlay.setColorFilter(filter)
         map.invalidate()
     }
     LaunchedEffect(state.isDrawing) {

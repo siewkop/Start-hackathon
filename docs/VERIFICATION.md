@@ -57,3 +57,12 @@ Fizyczny telefon i Docker nie były uruchamiane w tej weryfikacji. Projekt zawie
 - Android: `testDebugUnitTest lintDebug assembleDebug` — BUILD SUCCESSFUL. Nowe metadane mają wartości domyślne, zachowując możliwość odczytu starszych zapisów.
 - Integrację GPT sprawdzono przy użyciu kontrolowanych odpowiedzi HTTP. Nie wykonywano płatnych wywołań modelu w tej weryfikacji.
 - Próba rzeczywistego wyszukiwania dla szkicu w Warszawie: 72 kandydatów, osiem polecanych miejsc, cztery kategorie. Zapasowe dane nie zawierały opisów ani odnośników Wikipedia; nie dopisywano ich automatycznie.
+
+
+## Naprawa odnóg, nowa trasa i rekreacja — 31.10.2026
+
+- 54 testy backendu przeszły; po poprawce liczbowych parametrów BRouter powtórzono sześć testów nowej logiki.
+- Sprawdzono usuwanie dokładnie retracowanych odnóg, pozostawianie prawdziwych pętli, postojów i świadomie narysowanych powrotów.
+- Rzeczywiste zapytania przy Wiśle: profil pieszy hiking-beta zwrócił 1293 m / 64 wierzchołki; trekking z preferencjami rekreacyjnymi zwrócił 1403 m / 83 wierzchołki. Nie stanowi to gwarancji wyboru bulwaru dla każdej pary punktów.
+- Android: testDebugUnitTest lintDebug assembleDebug zakończone BUILD SUCCESSFUL.
+- Emulator: na odizolowanym przykładzie zapisanej trasy potwierdzono wyczyszczenie wyniku i punktów przez „Nowa trasa”; potwierdzono przełączanie Jasna/OSM oraz jeden przycisk planowania w zwykłym trybie i obecność przycisku na pełnym ekranie. Przywrócono ustawienia testowe i zamknięto uruchomiony do testu emulator.

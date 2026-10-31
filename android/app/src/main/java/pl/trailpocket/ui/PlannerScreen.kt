@@ -48,6 +48,7 @@ internal fun PlannerScreen(
     mapOnly: Boolean,
     onMapOnlyChange: (Boolean) -> Unit
 ) {
+    var softMap by rememberSaveable { mutableStateOf(true) }
     var expanded by rememberSaveable { mutableStateOf(false) }
     var panelHeightPx by remember { mutableIntStateOf(0) }
     var command by remember { mutableStateOf<MapCommand?>(null) }
@@ -72,7 +73,7 @@ internal fun PlannerScreen(
         Box(Modifier.fillMaxSize().padding(mapPadding).clipToBounds()) {
             TrailMap(state, Modifier.fillMaxSize(), vm::choose, command,
                 onSketch = vm::appendSketch, onStop = vm::addSketchStop, onMessage = vm::error,
-                onAttraction = { selectedAttraction = it })
+                onAttraction = { selectedAttraction = it }, softMap = softMap)
             val safe = if (mapOnly) Modifier.safeDrawingPadding() else Modifier
             Box(safe.fillMaxSize()) {
                 Row(Modifier.align(Alignment.TopStart).fillMaxWidth().padding(12.dp),
@@ -108,7 +109,7 @@ internal fun PlannerScreen(
 
                 val toolModifier = if (short) Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 38.dp)
                     else Modifier.align(Alignment.CenterEnd).padding(end = 12.dp)
-                MapTools(toolModifier, horizontal = short, locating = locating, hasRoute = state.route != null || state.sketch.path.size >= 2,
+                MapTools(toolModifier, softMap = softMap, onStyle = { softMap = !softMap }, horizontal = short, locating = locating, hasRoute = state.route != null || state.sketch.path.size >= 2,
                     onCountry = { vm.pauseDrawing(); send(MapAction.POLAND) }, onZoomIn = { send(MapAction.ZOOM_IN) },
                     onZoomOut = { send(MapAction.ZOOM_OUT) }, onFit = { send(MapAction.FIT_ROUTE) }, onLocate = onLocate)
                 MapAttribution(Modifier.align(Alignment.BottomStart).fillMaxWidth())
@@ -287,7 +288,7 @@ private fun EndpointRow(letter: String, label: String, point: Point?, selected: 
 }
 
 @Composable
-private fun MapTools(modifier: Modifier, horizontal: Boolean, locating: Boolean, hasRoute: Boolean,
+private fun MapTools(modifier: Modifier, softMap: Boolean, onStyle: () -> Unit, horizontal: Boolean, locating: Boolean, hasRoute: Boolean,
     onCountry: () -> Unit, onZoomIn: () -> Unit, onZoomOut: () -> Unit, onFit: () -> Unit, onLocate: () -> Unit) {
     val content: @Composable () -> Unit = {
         Surface(onClick = onCountry, color = Color.White, shape = RoundedCornerShape(14.dp), shadowElevation = 3.dp) {
@@ -302,6 +303,10 @@ private fun MapTools(modifier: Modifier, horizontal: Boolean, locating: Boolean,
                 HorizontalDivider(Modifier.width(48.dp), color = Moss)
                 IconButton(onClick = onZoomOut) { Icon(Icons.Outlined.Remove, "Oddal mapę") }
             }
+        }
+        Surface(onClick = onStyle, color = Color.White, shape = RoundedCornerShape(14.dp), shadowElevation = 3.dp) {
+            Text(if (softMap) "Jasna" else "OSM", Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+                fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
         if (hasRoute) MapIconButton(Icons.Outlined.CenterFocusStrong, "Pokaż całą trasę", onFit)
         Surface(shape = RoundedCornerShape(14.dp), shadowElevation = 3.dp, color = Color.White) {
