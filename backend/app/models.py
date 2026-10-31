@@ -64,7 +64,10 @@ class SketchRequest(BaseModel):
 
 class Attraction(Point):
     id: str = Field(pattern=r"^(node|way|relation)/[0-9]+$")
-    category: Literal["nature", "culture", "view"]
+    category: Literal["nature", "culture", "view", "art", "museum"]
+    kind: str = Field(default="", max_length=100)
+    description: str = Field(default="", max_length=800)
+    wikipedia: str = Field(default="", max_length=250)
     distance_to_route_m: float = Field(default=0, ge=0, allow_inf_nan=False)
     selected_for_detour: bool = False
 

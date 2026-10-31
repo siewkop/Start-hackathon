@@ -7,8 +7,8 @@
 3. **Przytrzymaj palec przez chwilę**, aby zostawić większą kropkę postoju. Pojawi się pomarańczowy znacznik i potwierdzenie dotykowe, jeśli urządzenie obsługuje wibracje. Postój możesz dodać podczas rysowania albo przytrzymując palec na już narysowanej linii.
 4. Strzałka cofania usuwa ostatni fragment lub ostatnio dodany postój. Wyłączenie zaznaczenia **Rysowanie** pozwala zwyczajnie przesuwać mapę; w trybie rysowania dostępne są też gesty dwoma palcami.
 5. Rozwiń panel, aby wybrać profil pieszy/rowerowy, **Miks / Przyroda / Historia** i limit dodatkowej drogi (domyślnie 25%).
-6. Naciśnij **Znajdź ciekawą trasę** albo **Wyznacz** nad mapą. Zielona linia jest faktycznie wyznaczoną trasą. Postoje pozostają oznaczone numerami; gwiazdki pokazują miejsca z OSM po odpowiednim przybliżeniu mapy.
-7. Rozwiń panel wyniku: zobaczysz uzasadnienie wyboru i listę **Po drodze**. Kliknięcie gwiazdki lub pozycji listy pokazuje kategorię, przybliżoną odległość od trasy i link do źródła OpenStreetMap.
+6. Naciśnij **Znajdź ciekawą trasę** albo **Wyznacz** nad mapą. Zielona linia jest faktycznie wyznaczoną trasą. Postoje pozostają oznaczone numerami; kolorowe znaczniki z literami pokazują wybrane miejsca z OSM po odpowiednim przybliżeniu mapy.
+7. Rozwiń panel wyniku: zobaczysz uzasadnienie wyboru i listę **Wybrane dla Ciebie**. Kliknięcie znacznika lub pozycji listy pokazuje kategorię, przybliżoną odległość od trasy i link do źródła OpenStreetMap.
 
 Wynik można zapisać i ponownie otworzyć. GPX zawiera geometrię trasy oraz punkty `wpt` dla postojów. Czas podawany przez silnik tras nie obejmuje czasu spędzonego na postojach.
 
@@ -37,11 +37,11 @@ Docker Compose przyjmuje te same zmienne z pliku `.env` w głównym folderze lub
 - Szkic ma maksymalnie 2000 próbek, do 8 postojów i długość 80 m–120 km. To limit lokalnego prototypu, pozwalający utrzymać małe zapytania do usług publicznych.
 - Backend redukuje linię metodą opartą na Douglasie–Peuckerze do maksymalnie 20 punktów prowadzących. Początek, koniec i indeksy postojów są zachowywane; długie proste odcinki dostają dodatkowe punkty prowadzące.
 - OSRM wyznacza rzeczywistą trasę pieszą lub rowerową przez te punkty. To dopasowanie ogólnego przebiegu szkicu, nie rekonstrukcja śladu GPS ani gwarancja przejścia dokładnie po narysowanych pikselach.
-- Atrakcje są pobierane z OSM przez Overpass w korytarzu szkicu. Przy awarii tego serwera używane są do trzech ograniczonych promieniem zapytań Photon, ze wspólnym cache i ograniczeniem ruchu wyszukiwarki. Zapasowe źródło może zawierać mniej miejsc niż pełne zapytanie Overpass.
+- Atrakcje są pobierane z OSM przez Overpass w korytarzu szkicu. Przy awarii tego serwera używane są do sześciu ograniczonych promieniem zapytań Photon (do 24 wyników każde, wspólny limit czasu 22 s), ze wspólnym cache i ograniczeniem ruchu wyszukiwarki. Zapasowe źródło może zawierać mniej miejsc niż pełne zapytanie Overpass.
 - Pod uwagę brane są m.in. oznaczone muzea, zabytki, punkty widokowe, parki, rezerwaty, szczyty i wodospady. Dane i ich kompletność zależą od OSM; nie dopisujemy fikcyjnych atrakcji, godzin otwarcia ani opisów historycznych.
 - Porównywane są trasa dopasowana do szkicu i maksymalnie trzy dodatkowe warianty przez ciekawe miejsca. Objazd przekraczający wybrany limit długości jest odrzucany. Wariant nie może utracić obowiązkowego postoju ani nadmiernie oddalić się od szkicu.
 - Ocena łączy liczbę i rodzaj pobliskich atrakcji, wybrany charakter wycieczki, dodatkowy dystans i zgodność ze szkicem. Szybkość nie jest jedynym kryterium.
-- GPT dostaje nazwy, kategorie i identyfikatory znalezionych miejsc. Zwraca wyłącznie kolejność tych identyfikatorów w kontrolowanym JSON. Nie dostaje klucza klienta ani pełnego szkicu. Nieznane, powtórzone lub niekompletne identyfikatory są odrzucane.
+- GPT dostaje maksymalnie 32 wstępnie wybrane miejsca: nazwy, kategorie, typy obiektów, dostępne opisy OSM, odnośniki Wikipedia oraz odległości od trasy. Zwraca wyłącznie kolejność tych identyfikatorów w kontrolowanym JSON. Nie dostaje klucza klienta ani pełnego szkicu. Nieznane, powtórzone lub niekompletne identyfikatory są odrzucane.
 
 To wybór najlepszego z obliczonych wariantów według opisanej oceny, a nie dowód znalezienia najatrakcyjniejszej trasy ze wszystkich możliwych. Gdy objazdy nie poprawiają wyniku lub przekraczają limit, pozostaje trasa dopasowana do szkicu. Przy awarii obu źródeł atrakcji nadal zwracana jest prawdziwa trasa, z wyraźną informacją o braku oceny miejsc.
 
@@ -69,3 +69,14 @@ Wyślij do `POST /api/v1/sketch-plans` z dotychczasowym nagłówkiem `X-Client-T
 Konfiguracja dostawców: `OSRM_FOOT_URL`, `OSRM_BIKE_URL`, `PHOTON_URL`, `OVERPASS_URL`. Dla większej liczby użytkowników ustaw docelowe instancje dostawców zamiast polegać na dostępności serwerów publicznych.
 
 Dokumentacja źródeł: [OSRM](https://project-osrm.org/docs/v5.24.0/api/), [Overpass — zapytania wzdłuż linii](https://dev.overpass-api.de/overpass-doc/en/full_data/polygon.html), [Photon](https://github.com/komoot/photon/blob/master/docs/api-v1.md).
+
+
+## Ulepszona selekcja atrakcji
+
+Wyszukiwanie Overpass obejmuje korytarz 1,2 km i do 600 kandydatów, w tym ogrody, galerie, ruiny, forty, jaskinie i plaże. Przy mniej niż 12 wynikach uzupełnia je Photon. Zapasowe zapytania są rozmieszczone według długości szkicu, niezależnie od liczby próbek palca; na długich trasach sześć zapytań nie pokrywa każdego kilometra. Publiczne serwery mogą ograniczać wyniki.
+
+Wynik zawiera najwyżej **8 polecanych miejsc** blisko faktycznie obliczonej trasy. Selekcja usuwa duplikaty obiektów, uwzględnia preferencje, dostępny opis i różnorodność kategorii oraz położenia. Kolejne podobne obiekty w jednym skupisku mają mniejszy wpływ na wybór przebiegu. Ranking GPT wpływa na wybór objazdów i końcowej ósemki. Nadal obowiązują limit objazdu, postoje oraz porównanie najwyżej czterech wariantów.
+
+Znaczniki i lista używają tych samych kolorów: **H — historia (brąz), N — natura (niebieski), W — widoki (bursztyn), M — muzea (fiolet), S — sztuka (róż)**. Kliknięcie pokazuje tytuł, kategorię, odległość i opis, jeśli źródło go udostępnia. Link do Wikipedii pojawia się wyłącznie przy istniejącym oznaczeniu w OSM. Opisy nie są generowane przez model; ich dostępność zależy od danych, a Photon zwykle ich nie zwraca.
+
+Dokumentacja źródeł: [opisy OSM](https://wiki.openstreetmap.org/wiki/Key:description), [API Photon](https://github.com/komoot/photon/blob/master/docs/api-v1.md). Nie wymaga to klucza Google Maps. Aby zobaczyć nową selekcję, uruchom ponownie backend, zainstaluj aktualne APK i wyznacz trasę ponownie; zapisane wcześniej wyniki zachowują stare dane.

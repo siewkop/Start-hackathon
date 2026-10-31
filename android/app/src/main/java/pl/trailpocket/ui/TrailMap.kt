@@ -165,8 +165,8 @@ internal fun TrailMap(state: PlannerState, modifier: Modifier = Modifier, onTap:
         }
         // Keep landmarks legible and always render mandatory points above optional POIs.
         state.route?.discovery?.attractions?.sortedByDescending { it.selectedForDetour }?.take(8)?.forEach { poi ->
-            val poiMarker = marker(Point(poi.lat, poi.lon, poi.name), "★", android.graphics.Color.rgb(117, 88, 35)).apply {
-                icon = markerIcon(map.resources, "★", android.graphics.Color.rgb(117, 88, 35), 28)
+            val poiMarker = marker(Point(poi.lat, poi.lon, poi.name), poi.categorySymbol(), poi.categoryColor()).apply {
+                icon = markerIcon(map.resources, poi.categorySymbol(), poi.categoryColor(), 34)
                 isEnabled = map.zoomLevelDouble >= 12
                 setOnMarkerClickListener { _, _ -> currentAttraction(poi); true }
             }

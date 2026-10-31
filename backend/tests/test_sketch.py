@@ -115,7 +115,7 @@ def test_photon_backup_keeps_real_osm_ids_and_uses_bounded_lookups(tmp_path, mon
         if "interpreter" in request.url.path:
             return httpx.Response(503)
         if request.url.path.endswith("/reverse"):
-            assert request.url.params["radius"] == "1"
+            assert request.url.params["radius"] == "1.25"
             return httpx.Response(200, json={"features": [{"properties": {
                 "osm_type": "N", "osm_id": 321, "name": "Park testowy", "osm_key": "leisure", "osm_value": "park"},
                 "geometry": {"coordinates": [21.01, 52.0]}}]})

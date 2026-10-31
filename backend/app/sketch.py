@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 
-from .attractions import AttractionsProvider, PoiRanker, attraction_weight
+from .attractions import AttractionsProvider, PoiRanker, attraction_weight, curated
 from .geo import Line, anchors, distance, route_line, routing_points
 from .models import Attraction, Discovery, PlanRequest, Point, Route, SketchRequest
 from .providers import ExternalServices
@@ -36,9 +36,10 @@ class SketchPlanner:
         except HTTPException:
             pois = []
             warnings.append("Nie udało się pobrać atrakcji. Dopasowano szkic do ścieżek, bez oceny ciekawych miejsc.")
-        candidates = sorted(pois, key=lambda p: attraction_weight(p, request.interest) /
-                            (1 + base_line.locate(p)[0] / 500), reverse=True)
+        candidates = curated(pois, base_line, request.interest, limit=32)
+        candidates = [p.model_copy(update={"distance_to_route_m": round(base_line.locate(p)[0])}) for p in candidates]
         candidates, ai_used, ai_warning = await self.ranker.rank(candidates, request.interest)
+        priorities = {p.id: (len(candidates) - i) / max(1, len(candidates)) for i, p in enumerate(candidates)} if ai_used else {}
         if ai_warning:
             warnings.append(ai_warning)
         # A bounded search of baseline + up to three real routed detours, not a global optimum claim.
@@ -83,17 +84,24 @@ class SketchPlanner:
             actual = route_line(route.geometry.coordinates)
             nearby = [(p, actual.locate(p)[0]) for p in pois]
             nearby = [(p, gap) for p, gap in nearby if gap <= 200]
-            nearby.sort(key=lambda item: attraction_weight(item[0], request.interest), reverse=True)
-            attraction_score = sum(attraction_weight(p, request.interest) for p, _ in nearby[:20])
-            # GPT affects attraction priority, never geometric validity or the detour limit.
-            if ai_used:
-                priorities = {p.id: (len(candidates) - i) / max(1, len(candidates)) for i, p in enumerate(candidates)}
-                attraction_score += sum(priorities.get(p.id, 0) for p, _ in nearby[:20])
+            highlights = curated([p for p, _ in nearby], actual, request.interest, priorities=priorities)
+            gaps = {p.id: gap for p, gap in nearby}
+            nearby = [(p, gaps[p.id]) for p in highlights]
+            counts = {}
+            attraction_score = 0.0
+            visited_progress = []
+            for p in highlights:
+                progress = actual.locate(p)[1]
+                clustered = sum(abs(progress - previous) < 350 for previous in visited_progress)
+                same = counts.get(p.category, 0)
+                attraction_score += (attraction_weight(p, request.interest) + 3 * priorities.get(p.id, 0)) / (1 + .45 * same) / (1 + .35 * clustered)
+                visited_progress.append(progress)
+                counts[p.category] = same + 1
             sample = actual.points[::max(1, len(actual.points) // 60)]
             deviation = sum(line.locate(p)[0] for p in sample) / len(sample)
             extra = max(0, route.distance_m - baseline.distance_m) / max(1, baseline.distance_m)
             score = attraction_score - 10 * extra - deviation / 200
-            return score, nearby[:20]
+            return score, nearby[:8]
 
         assessed = [(assess(v), v) for v in variants]
         (score, nearby), (best, detour_id) = max(assessed, key=lambda x: x[0][0])

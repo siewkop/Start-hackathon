@@ -1,6 +1,8 @@
 package pl.trailpocket.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Undo
@@ -49,10 +51,14 @@ internal fun SketchToolbar(state: PlannerState, modifier: Modifier, onDraw: () -
 internal fun AttractionSheet(poi: Attraction, onClose: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     ModalBottomSheet(onDismissRequest = onClose, containerColor = Paper) {
-        Column(Modifier.padding(horizontal = 24.dp).navigationBarsPadding()) {
-            Text(poi.categoryLabel(), color = Forest, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Column(Modifier.padding(horizontal = 24.dp).navigationBarsPadding().verticalScroll(rememberScrollState())) {
+            Text("${poi.categorySymbol()} · ${poi.categoryLabel()}", color = Color(poi.categoryColor()), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             Text(poi.name, fontSize = 25.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 8.dp))
             Text("Około ${poi.distanceToRouteM.roundToInt()} m od wyznaczonej trasy.", fontSize = 14.sp)
+            if (poi.description.isNotBlank()) Text(poi.description, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp))
+            poi.wikipediaUrl()?.let { url ->
+                TextButton(onClick = { uriHandler.openUri(url) }) { Text("Przeczytaj opis w Wikipedii ↗") }
+            }
             if (poi.selectedForDetour) Text("Wybrany wariant prowadzi w pobliżu tego miejsca.", fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
             Text("Miejsce pochodzi z danych OpenStreetMap. Sprawdź szczegóły i dostępność przed wizytą.",
                 fontSize = 12.sp, modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)

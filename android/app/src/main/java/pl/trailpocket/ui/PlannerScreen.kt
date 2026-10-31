@@ -211,11 +211,13 @@ private fun PlannerPanel(
                         Text("Czas przejścia nie obejmuje postojów.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         discovery.warnings.forEach { Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
                         if (discovery.attractions.isNotEmpty()) {
-                            Text("Po drodze · ${discovery.attractions.size}", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+                            Text("Wybrane dla Ciebie · ${discovery.attractions.size}", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
                             discovery.attractions.forEach { poi ->
                                 Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onAttraction(poi) }.padding(vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Outlined.StarOutline, null, tint = Forest, modifier = Modifier.size(22.dp))
+                                    Box(Modifier.size(30.dp).clip(CircleShape).background(Color(poi.categoryColor())), contentAlignment = Alignment.Center) {
+                                        Text(poi.categorySymbol(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
                                     Column(Modifier.weight(1f).padding(start = 8.dp)) {
                                         Text(poi.name, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                         Text("${poi.categoryLabel()} · ok. ${poi.distanceToRouteM.roundToInt()} m od trasy", fontSize = 11.sp,

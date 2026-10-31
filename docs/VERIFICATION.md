@@ -49,3 +49,11 @@ Fizyczny telefon i Docker nie były uruchamiane w tej weryfikacji. Projekt zawie
 - Integrację GPT sprawdzono na kontrolowanych odpowiedziach HTTP, łącznie z odrzuceniem nieznanych identyfikatorów. **Nie wykonywano płatnego wywołania GPT**: użytkownik nie przekazał klucza do tego uruchomienia. Dane atrakcji i geometria w teście na żywo pochodziły z rzeczywistych usług OSM.
 - Sprawdzono rozwinięcie listy „Po drodze” i otwarcie szczegółów Kolumny Zygmunta, z odległością od śladu i linkiem do OSM.
 - Podglądy: [szkic i postoje](preview-sketch.png), [dopasowana trasa](preview-sketch-route.png), [szczegóły miejsca](preview-sketch-place.png).
+
+
+## Ulepszona selekcja atrakcji — 31.10.2026
+
+- 48 testów backendu zakończonych powodzeniem, w tym pokrycie środka długiego odcinka, scalanie duplikatów, różnorodność krótkiej listy, opisy OSM, nowe kategorie i wpływ zweryfikowanych identyfikatorów GPT.
+- Android: `testDebugUnitTest lintDebug assembleDebug` — BUILD SUCCESSFUL. Nowe metadane mają wartości domyślne, zachowując możliwość odczytu starszych zapisów.
+- Integrację GPT sprawdzono przy użyciu kontrolowanych odpowiedzi HTTP. Nie wykonywano płatnych wywołań modelu w tej weryfikacji.
+- Próba rzeczywistego wyszukiwania dla szkicu w Warszawie: 72 kandydatów, osiem polecanych miejsc, cztery kategorie. Zapasowe dane nie zawierały opisów ani odnośników Wikipedia; nie dopisywano ich automatycznie.

@@ -38,9 +38,23 @@ data class SketchRequest(val profile: Profile, val path: List<Point>,
 
 @Serializable
 data class Attraction(val id: String, val lat: Double, val lon: Double, val name: String, val category: String,
+    val kind: String = "", val description: String = "", val wikipedia: String = "",
     @SerialName("distance_to_route_m") val distanceToRouteM: Double = 0.0,
     @SerialName("selected_for_detour") val selectedForDetour: Boolean = false) {
-    fun categoryLabel() = when (category) { "nature" -> "Przyroda"; "view" -> "Punkt widokowy"; else -> "Kultura i historia" }
+    fun categoryLabel() = when (category) { "nature" -> "Przyroda"; "view" -> "Punkt widokowy"; "art" -> "Sztuka"; "museum" -> "Muzeum"; else -> "Historia" }
+    fun categoryColor(): Int = when (category) {
+        "nature" -> 0xFF1976B9.toInt()
+        "view" -> 0xFFD18416.toInt()
+        "art" -> 0xFFAD407D.toInt()
+        "museum" -> 0xFF7255AD.toInt()
+        else -> 0xFF865B3B.toInt()
+    }
+    fun categorySymbol() = when (category) { "nature" -> "N"; "view" -> "W"; "art" -> "S"; "museum" -> "M"; else -> "H" }
+    fun wikipediaUrl(): String? {
+        val parts = wikipedia.split(":", limit = 2)
+        if (parts.size != 2 || !parts[0].matches(Regex("[a-z]{2,12}")) || parts[1].isBlank()) return null
+        return "https://${parts[0]}.wikipedia.org/wiki/" + java.net.URLEncoder.encode(parts[1].replace(' ', '_'), "UTF-8").replace("+", "%20")
+    }
     fun sourceUrl() = "https://www.openstreetmap.org/$id"
 }
 
