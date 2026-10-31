@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import json
 import time
+import os
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -53,6 +54,12 @@ class ExternalServices:
             return data
 
     async def plan(self, request: PlanRequest, snap_radius: int | None = None, timeout: float = 25) -> Route:
+        warning = None
+        if request.recreation > 0:
+            try:
+                return await self._recreation_plan(request, timeout)
+            except HTTPException:
+                warning = "Profil rekreacyjny jest niedostępny. Użyto standardowego wyznaczania trasy."
         coordinates = ";".join(f"{p.lon:.6f},{p.lat:.6f}" for p in request.points)
         url = f"{self.urls[request.profile]}/route/v1/driving/{coordinates}"
         params = {"overview": "full", "geometries": "geojson", "steps": "false"}
@@ -66,9 +73,37 @@ class ExternalServices:
             return Route(id=str(uuid4()), profile=request.profile, points=request.points,
                          geometry=Geometry.model_validate(result["geometry"]),
                          distance_m=result["distance"], duration_s=result["duration"],
-                         created_at=datetime.now(timezone.utc))
+                         created_at=datetime.now(timezone.utc), recreation=request.recreation, routing_warning=warning)
         except (KeyError, TypeError, IndexError, ValidationError) as exc:
             raise HTTPException(502, "Usługa tras zwróciła nieprawidłowe dane.") from exc
+
+    async def _recreation_plan(self, request: PlanRequest, timeout: float) -> Route:
+        profile = "hiking-beta" if request.profile == Profile.hike else "trekking"
+        params = {"lonlats": "|".join(f"{p.lon:.6f},{p.lat:.6f}" for p in request.points),
+                  "profile": profile, "alternativeidx": 0, "format": "geojson"}
+        if request.profile == Profile.hike:
+            params.update({"profile:SAC_scale_limit": 1, "profile:consider_elevation": 0,
+                           "profile:shortest_way": 1 if request.recreation < .3 else 0,
+                           "profile:prefer_hiking_routes": 1 if request.recreation >= .6 else 0})
+        else:
+            params.update({"profile:consider_noise": 1 if request.recreation >= .3 else 0,
+                           "profile:consider_river": 1 if request.recreation >= .6 else 0,
+                           "profile:consider_forest": 1 if request.recreation >= .6 else 0})
+        data = await self._get(os.getenv("BROUTER_URL", "https://brouter.de/brouter"), params, "routing", 3600, timeout=timeout)
+        try:
+            feature = next(f for f in data["features"] if f["geometry"]["type"] == "LineString")
+            props = feature["properties"]
+            geometry = Geometry(coordinates=[tuple(p[:2]) for p in feature["geometry"]["coordinates"]])
+            from .geo import Line
+            from .models import Point
+            line = Line([Point(lon=p[0], lat=p[1]) for p in geometry.coordinates])
+            if any(line.locate(p)[0] > 450 for p in request.points):
+                raise ValueError("Routing moved waypoints too far")
+            return Route(id=str(uuid4()), profile=request.profile, recreation=request.recreation,
+                         points=request.points, geometry=geometry, distance_m=float(props["track-length"]),
+                         duration_s=float(props["total-time"]), created_at=datetime.now(timezone.utc), routing_engine="brouter")
+        except (KeyError, TypeError, ValueError, StopIteration, ValidationError) as exc:
+            raise HTTPException(502, "Nie udało się odczytać trasy rekreacyjnej.") from exc
 
     async def search(self, query: str) -> list[Place]:
         data = await self._get(f"{self.photon_url}/api/", {"q": query, "limit": 5}, "search", 86400)

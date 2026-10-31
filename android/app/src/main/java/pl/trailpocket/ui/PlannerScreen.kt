@@ -104,7 +104,7 @@ internal fun PlannerScreen(
                 }
 
                 SketchToolbar(state, Modifier.align(Alignment.TopStart).padding(start = 12.dp, top = 72.dp),
-                    onDraw = vm::toggleDrawing, onUndo = vm::undoSketch, onPlan = vm::plan)
+                    onDraw = vm::toggleDrawing, onUndo = vm::undoSketch, onPlan = vm::plan, showPlan = mapOnly)
 
                 val toolModifier = if (short) Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 38.dp)
                     else Modifier.align(Alignment.CenterEnd).padding(end = 12.dp)
@@ -124,6 +124,7 @@ internal fun PlannerScreen(
                 onSwap = vm::swap, onClear = vm::clear, onProfile = vm::setProfile, onPlan = vm::plan,
                 onSave = onSave, onShare = onShare, onPointMode = vm::usePointMode, onSketchMode = vm::toggleDrawing,
                 onInterest = vm::setInterest, onExtraRatio = vm::setExtraRatio,
+                onNew = vm::newRoute, onRecreation = vm::setRecreation,
                 onAttraction = { selectedAttraction = it })
         }
     }
@@ -136,6 +137,7 @@ private fun PlannerPanel(
     onToggle: () -> Unit, onSelect: (Boolean) -> Unit, onSearch: (Boolean) -> Unit,
     onSwap: () -> Unit, onClear: () -> Unit, onProfile: (Profile) -> Unit, onPlan: () -> Unit,
     onSave: () -> Unit, onShare: (Route) -> Unit, onPointMode: () -> Unit, onSketchMode: () -> Unit,
+    onNew: () -> Unit, onRecreation: (Double) -> Unit,
     onInterest: (Interest) -> Unit, onExtraRatio: (Double) -> Unit, onAttraction: (Attraction) -> Unit
 ) {
     Surface(modifier, color = Color.White, shadowElevation = 8.dp,
@@ -161,6 +163,10 @@ private fun PlannerPanel(
                     Icon(if (expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
                         if (expanded) "Zwiń panel planowania" else "Rozwiń panel planowania")
                 }
+            }
+            if (state.route != null) TextButton(onClick = onNew, enabled = !state.busy) {
+                Icon(Icons.Outlined.Add, null, Modifier.size(18.dp))
+                Text("Nowa trasa", Modifier.padding(start = 6.dp))
             }
             if (expanded) {
                 Column(Modifier.weight(1f, fill = wide).verticalScroll(rememberScrollState())) {
@@ -191,6 +197,10 @@ private fun PlannerPanel(
                         Slider(value = state.maxExtraRatio.toFloat(), onValueChange = { onExtraRatio(it.toDouble()) },
                             valueRange = 0f..0.4f, steps = 7, enabled = !state.busy)
                     }
+                    Text(if (state.recreation == 0.0) "Styl: bezpośrednio" else if (state.recreation < .5) "Styl: spokojne ścieżki" else if (state.profile == Profile.HIKE) "Styl: spacer rekreacyjny" else "Styl: rower rekreacyjny", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Slider(value = state.recreation.toFloat(), onValueChange = { onRecreation(it.toDouble()) },
+                        valueRange = 0f..1f, steps = 2, enabled = !state.busy)
+                    Text("Bezpośrednio → spokojne ścieżki → rekreacyjnie", fontSize = 11.sp)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Profile.entries.forEach { profile ->
                             FilterChip(selected = state.profile == profile, enabled = !state.busy,
@@ -205,6 +215,7 @@ private fun PlannerPanel(
                         }
                         TextButton(onClick = onClear, enabled = !state.busy && (state.start != null || state.end != null)) { Text("Wyczyść") }
                     }
+                    state.route?.routingWarning?.let { Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.error) }
                     state.route?.discovery?.let { discovery ->
                         Text(if (discovery.aiUsed) "Dlaczego ta trasa · wsparta GPT" else "Dlaczego ta trasa", fontWeight = FontWeight.Bold)
                         Text(discovery.explanation, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp))

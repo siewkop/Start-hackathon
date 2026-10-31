@@ -80,3 +80,16 @@ Wynik zawiera najwyżej **8 polecanych miejsc** blisko faktycznie obliczonej tra
 Znaczniki i lista używają tych samych kolorów: **H — historia (brąz), N — natura (niebieski), W — widoki (bursztyn), M — muzea (fiolet), S — sztuka (róż)**. Kliknięcie pokazuje tytuł, kategorię, odległość i opis, jeśli źródło go udostępnia. Link do Wikipedii pojawia się wyłącznie przy istniejącym oznaczeniu w OSM. Opisy nie są generowane przez model; ich dostępność zależy od danych, a Photon zwykle ich nie zwraca.
 
 Dokumentacja źródeł: [opisy OSM](https://wiki.openstreetmap.org/wiki/Key:description), [API Photon](https://github.com/komoot/photon/blob/master/docs/api-v1.md). Nie wymaga to klucza Google Maps. Aby zobaczyć nową selekcję, uruchom ponownie backend, zainstaluj aktualne APK i wyznacz trasę ponownie; zapisane wcześniej wyniki zachowują stare dane.
+
+
+## Nowa trasa, odnogi i rekreacja
+
+Przycisk **Nowa trasa** pod podsumowaniem usuwa bieżący szkic, punkty, postoje i wynik, zachowując zapisane wycieczki. Powrót do zakładki „Zaplanuj” po zapisaniu/otwarciu zapisanej trasy rozpoczyna nowy szkic. W zwykłym widoku jest jeden przycisk obliczania na dole; górny „Wyznacz” pozostaje tylko w trybie pełnoekranowym, w którym dolny panel jest ukryty.
+
+Suwak stylu działa dla szkiców i dwóch punktów. „Bezpośrednio” używa dotychczasowego OSRM, kolejne poziomy używają BRouter: hiking-beta dla spaceru (z ograniczeniem SAC do T1) lub trekking dla roweru. Profil rowerowy premiuje drogi rowerowe, na wyższych poziomach uwzględnia otoczenie rzek, lasów i hałas. Profil pieszy premiuje ścieżki i szlaki. To preferencja na podstawie dostępnych tagów OSM, nie gwarancja bulwaru, widoku, bezpiecznego przejazdu lub pełnej separacji od ruchu samochodowego. Własny serwer można podać w `BROUTER_URL`; domyślnie używany jest publiczny https://brouter.de/brouter.
+
+Limit dodatkowej drogi dla atrakcji jest liczony względem trasy bazowej wybranego profilu. Błąd serwera rekreacyjnego powoduje powrót do OSRM z widocznym komunikatem. Wybrany styl zapisuje się z trasą i jest przywracany podczas jej otwierania.
+
+Kontrola geometrii usuwa rozpoznane odnogi przechodzące dokładnie tą samą drogą w obie strony. Nie wycina prawdziwych pętli ani dojść do obowiązkowych postojów. Celowo narysowany powrót jest zachowywany. To ostrożna korekta: nie każdy możliwy nawrót zostanie usunięty. Po korekcie dystans i szacowany czas są proporcjonalnie aktualizowane.
+
+Źródła profili: https://brouter.de/brouter/profiles2/hiking-beta.brf i https://brouter.de/brouter/profiles2/trekking.brf. BRouter otrzymuje współrzędne punktów prowadzących tak jak dotychczasowy router. Klucz OpenAI nie jest potrzebny do profili rekreacyjnych.

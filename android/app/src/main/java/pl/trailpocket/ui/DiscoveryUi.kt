@@ -21,7 +21,7 @@ import pl.trailpocket.data.PlanningMode
 import kotlin.math.roundToInt
 
 @Composable
-internal fun SketchToolbar(state: PlannerState, modifier: Modifier, onDraw: () -> Unit, onUndo: () -> Unit, onPlan: () -> Unit) {
+internal fun SketchToolbar(state: PlannerState, modifier: Modifier, onDraw: () -> Unit, onUndo: () -> Unit, onPlan: () -> Unit, showPlan: Boolean = false) {
     Surface(modifier, color = Color.White.copy(alpha = .97f), shape = RoundedCornerShape(16.dp), shadowElevation = 3.dp) {
         Row(Modifier.padding(horizontal = 8.dp, vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             if (state.planningMode == PlanningMode.POINTS) {
@@ -36,7 +36,7 @@ internal fun SketchToolbar(state: PlannerState, modifier: Modifier, onDraw: () -
                 IconButton(onClick = onUndo, enabled = state.canUndoSketch && !state.busy) {
                     Icon(Icons.AutoMirrored.Outlined.Undo, "Cofnij ostatni fragment lub postój")
                 }
-                if (state.sketch.path.size >= 2 && state.route == null) TextButton(onClick = onPlan, enabled = !state.busy) {
+                if (showPlan && state.sketch.path.size >= 2 && state.route == null) TextButton(onClick = onPlan, enabled = !state.busy) {
                     if (state.busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                     else Icon(Icons.Outlined.Route, null, Modifier.size(20.dp))
                     Text(if (state.busy) "Układam…" else "Wyznacz", Modifier.padding(start = 4.dp))

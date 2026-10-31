@@ -27,7 +27,7 @@ class TrailRepository(context: Context) {
         .callTimeout(40, TimeUnit.SECONDS)
         // Discovery can wait for several upstream services before returning a response.
         // The per-call deadline below still limits ordinary requests to 40 seconds.
-        .readTimeout(90, TimeUnit.SECONDS)
+        .readTimeout(150, TimeUnit.SECONDS)
         .build()
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val token = prefs.getString("token", null) ?: ByteArray(32).also {
@@ -79,12 +79,12 @@ class TrailRepository(context: Context) {
             }
         }
 
-    suspend fun plan(profile: Profile, points: List<Point>): Route = json.decodeFromString(
-        request("/api/v1/plans", "POST", json.encodeToString(PlanRequest(profile, points))))
+    suspend fun plan(profile: Profile, points: List<Point>, recreation: Double): Route = json.decodeFromString(
+        request("/api/v1/plans", "POST", json.encodeToString(PlanRequest(profile, points, recreation))))
 
-    suspend fun sketch(profile: Profile, draft: SketchDraft, interest: Interest, extraRatio: Double): Route = json.decodeFromString(
+    suspend fun sketch(profile: Profile, draft: SketchDraft, interest: Interest, extraRatio: Double, recreation: Double): Route = json.decodeFromString(
         request("/api/v1/sketch-plans", "POST", json.encodeToString(
-            SketchRequest(profile, draft.path, draft.stopIndices, interest, extraRatio)), timeoutSeconds = 90))
+            SketchRequest(profile, draft.path, draft.stopIndices, interest, extraRatio, recreation)), timeoutSeconds = 150))
 
     suspend fun search(query: String): List<Point> {
         val url = (baseUrl + "/api/v1/places").toHttpUrlOrNull()!!.newBuilder()

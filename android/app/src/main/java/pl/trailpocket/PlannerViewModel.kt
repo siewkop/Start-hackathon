@@ -40,7 +40,8 @@ data class PlannerState(
     val sketch: SketchDraft = SketchDraft(),
     val canUndoSketch: Boolean = false,
     val interest: Interest = Interest.BALANCED,
-    val maxExtraRatio: Double = .25
+    val maxExtraRatio: Double = .25,
+    val recreation: Double = .67
 )
 
 class PlannerViewModel(application: Application) : AndroidViewModel(application) {
@@ -146,6 +147,16 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
         mutable.update { it.copy(start = it.end, end = it.start, route = null, isSaved = false) }
     }
 
+    fun newRoute() {
+        if (mutable.value.busy) return
+        clear()
+        mutable.update { it.copy(isDrawing = false, focus = null, message = null) }
+    }
+
+    fun setRecreation(value: Double) {
+        if (!mutable.value.busy) mutable.update { it.copy(recreation = value.coerceIn(0.0, 1.0), route = null, isSaved = false) }
+    }
+
     fun clear() {
         if (mutable.value.busy) return
         planJob?.cancel()
@@ -169,7 +180,7 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
         planJob = viewModelScope.launch {
             mutable.update { it.copy(busy = true, error = null) }
             try {
-                val route = repository.plan(snapshot.profile, listOf(start, end))
+                val route = repository.plan(snapshot.profile, listOf(start, end), snapshot.recreation)
                 mutable.update { it.copy(route = route, isSaved = false, cameraVersion = it.cameraVersion + 1) }
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { error(e.message ?: "Nie udało się wyznaczyć trasy.")
@@ -183,7 +194,7 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
         planJob = viewModelScope.launch {
             mutable.update { it.copy(busy = true, isDrawing = false, error = null) }
             try {
-                val route = repository.sketch(snapshot.profile, snapshot.sketch, snapshot.interest, snapshot.maxExtraRatio)
+                val route = repository.sketch(snapshot.profile, snapshot.sketch, snapshot.interest, snapshot.maxExtraRatio, snapshot.recreation)
                 mutable.update { it.copy(route = route, isSaved = false, cameraVersion = it.cameraVersion + 1) }
             } catch (e: CancellationException) { throw e
             } catch (e: Exception) { error(e.message ?: "Nie udało się dopasować szkicu do ścieżek.")
@@ -255,7 +266,7 @@ class PlannerViewModel(application: Application) : AndroidViewModel(application)
         if (mutable.value.busy) return
         sketchHistory.clear()
         mutable.update { it.copy(start = route.points.first(), end = route.points.last(), profile = route.profile,
-            route = route, isSaved = true, places = emptyList(), error = null, cameraVersion = it.cameraVersion + 1,
+            route = route, recreation = route.recreation, isSaved = true, places = emptyList(), error = null, cameraVersion = it.cameraVersion + 1,
             planningMode = if (route.discovery == null) PlanningMode.POINTS else PlanningMode.SKETCH,
             sketch = route.discovery?.let { d -> SketchDraft(d.sketch, d.stopIndices) } ?: SketchDraft(),
             interest = route.discovery?.interest ?: it.interest, isDrawing = false, canUndoSketch = false) }

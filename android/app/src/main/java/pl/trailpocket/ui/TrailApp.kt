@@ -123,7 +123,7 @@ fun TrailApp(vm: PlannerViewModel = viewModel()) {
         },
         bottomBar = {
             if (!mapOnly && !wideNavigation) NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
-                NavigationBarItem(selected = tab == 0, onClick = { tab = 0 },
+                NavigationBarItem(selected = tab == 0, onClick = { if (state.isSaved) vm.newRoute(); tab = 0 },
                     icon = { Icon(Icons.Outlined.Map, null) }, label = { Text("Zaplanuj") })
                 NavigationBarItem(selected = tab == 1, onClick = { tab = 1; vm.refresh() },
                     icon = { Icon(Icons.Outlined.Bookmarks, null) }, label = { Text("Moje trasy") })
@@ -133,7 +133,7 @@ fun TrailApp(vm: PlannerViewModel = viewModel()) {
     ) { padding ->
         Row(Modifier.padding(padding).fillMaxSize()) {
             if (wideNavigation && !mapOnly) NavigationRail(containerColor = Color.White) {
-                NavigationRailItem(selected = tab == 0, onClick = { tab = 0 },
+                NavigationRailItem(selected = tab == 0, onClick = { if (state.isSaved) vm.newRoute(); tab = 0 },
                     icon = { Icon(Icons.Outlined.Map, null) }, label = { Text("Zaplanuj") })
                 NavigationRailItem(selected = tab == 1, onClick = { tab = 1; vm.refresh() },
                     icon = { Icon(Icons.Outlined.Bookmarks, null) }, label = { Text("Moje trasy") })
@@ -144,7 +144,7 @@ fun TrailApp(vm: PlannerViewModel = viewModel()) {
                 onSave = { showSave = true }, onShare = onShare,
                 mapOnly = mapOnly, onMapOnlyChange = { mapOnly = it })
             else SavedScreen(state, onOpen = { vm.open(it); tab = 0 }, onDelete = { deleting = it },
-                onRefresh = vm::refresh, onPlan = { tab = 0 })
+                onRefresh = vm::refresh, onPlan = { vm.newRoute(); tab = 0 })
             }
         }
     }

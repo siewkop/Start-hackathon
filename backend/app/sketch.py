@@ -4,6 +4,7 @@ from .attractions import AttractionsProvider, PoiRanker, attraction_weight, cura
 from .geo import Line, anchors, distance, route_line, routing_points
 from .models import Attraction, Discovery, PlanRequest, Point, Route, SketchRequest
 from .providers import ExternalServices
+from .route_quality import clean_spurs
 
 
 class SketchPlanner:
@@ -23,10 +24,11 @@ class SketchPlanner:
         points = routing_points([request.path[i] for i in indices])
         if len(points) < 2:
             raise HTTPException(422, "Nie można odczytać przebiegu szkicu. Narysuj wyraźniejszą trasę.")
-        baseline = await self.routing.plan(PlanRequest(profile=request.profile, points=points), snap_radius=450, timeout=15)
+        baseline = await self.routing.plan(PlanRequest(profile=request.profile, points=points, recreation=request.recreation), snap_radius=450, timeout=15)
+        baseline = clean_spurs(baseline, request.path, stops)
         self._check_stops(baseline, stops)
         base_line = route_line(baseline.geometry.coordinates)
-        warnings = []
+        warnings = [baseline.routing_warning] if baseline.routing_warning else []
         base_sample = base_line.points[::max(1, len(base_line.points) // 60)]
         base_max_gap = max(line.locate(p)[0] for p in base_sample)
         if base_max_gap > 1000:
@@ -64,8 +66,11 @@ class SketchPlanner:
             knots.append((progress, Point(lat=poi.lat, lon=poi.lon, name=poi.name)))
             routed = routing_points([request.path[0]] + [p for _, p in sorted(knots, key=lambda k: k[0])] + [request.path[-1]])
             try:
-                variant = await self.routing.plan(PlanRequest(profile=request.profile, points=routed), snap_radius=450, timeout=10)
+                variant = await self.routing.plan(PlanRequest(profile=request.profile, points=routed, recreation=request.recreation), snap_radius=450, timeout=10)
+                variant = clean_spurs(variant, request.path, stops)
                 self._check_stops(variant, stops)
+                if request.recreation > 0 and variant.routing_engine != baseline.routing_engine:
+                    continue
                 if variant.distance_m > baseline.distance_m * (1 + request.max_extra_ratio) + 5:
                     continue
                 variant_line = route_line(variant.geometry.coordinates)

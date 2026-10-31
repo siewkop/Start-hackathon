@@ -34,7 +34,7 @@ data class SketchDraft(val path: List<Point> = emptyList(), @SerialName("stop_in
 @Serializable
 data class SketchRequest(val profile: Profile, val path: List<Point>,
     @SerialName("stop_indices") val stopIndices: List<Int>, val interest: Interest,
-    @SerialName("max_extra_ratio") val maxExtraRatio: Double = .25)
+    @SerialName("max_extra_ratio") val maxExtraRatio: Double = .25, val recreation: Double = 0.67)
 
 @Serializable
 data class Attraction(val id: String, val lat: Double, val lon: Double, val name: String, val category: String,
@@ -76,6 +76,9 @@ data class Route(
     @SerialName("distance_m") val distanceM: Double,
     @SerialName("duration_s") val durationS: Double,
     @SerialName("created_at") val createdAt: String,
+    val recreation: Double = 0.0,
+    @SerialName("routing_engine") val routingEngine: String = "osrm",
+    @SerialName("routing_warning") val routingWarning: String? = null,
     val discovery: Discovery? = null
 ) {
     fun distanceLabel() = if (distanceM < 1000) "${distanceM.roundToInt()} m"
@@ -87,7 +90,7 @@ data class Route(
 }
 
 @Serializable
-data class PlanRequest(val profile: Profile, val points: List<Point>)
+data class PlanRequest(val profile: Profile, val points: List<Point>, val recreation: Double = 0.67)
 
 @Serializable
 data class SaveRequest(@SerialName("plan_id") val planId: String, val name: String)

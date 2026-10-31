@@ -26,6 +26,7 @@ class Point(BaseModel):
 class PlanRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     profile: Profile
+    recreation: float = Field(default=0, ge=0, le=1, allow_inf_nan=False)
     points: list[Point] = Field(min_length=2, max_length=25)
 
     @model_validator(mode="after")
@@ -47,6 +48,7 @@ class Geometry(BaseModel):
 class SketchRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     profile: Profile
+    recreation: float = Field(default=0, ge=0, le=1, allow_inf_nan=False)
     path: list[Point] = Field(min_length=2, max_length=2000)
     stop_indices: list[int] = Field(default_factory=list, max_length=8)
     interest: Interest = Interest.balanced
@@ -90,12 +92,15 @@ class Route(BaseModel):
     id: str
     name: str | None = None
     profile: Profile
+    recreation: float = Field(default=0, ge=0, le=1, allow_inf_nan=False)
     points: list[Point]
     geometry: Geometry
     distance_m: float = Field(ge=0, allow_inf_nan=False)
     duration_s: float = Field(ge=0, allow_inf_nan=False)
     created_at: datetime
     discovery: Discovery | None = None
+    routing_engine: str = "osrm"
+    routing_warning: str | None = None
 
 
 class SaveRequest(BaseModel):
